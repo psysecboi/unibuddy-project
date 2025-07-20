@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { db } from "./firebase";
@@ -9,25 +8,22 @@ export default function ProfessorDashboard() {
   const [aiSuggestions, setAiSuggestions] = useState("");
   const [doubts, setDoubts] = useState([]);
 
-  useEffect(() => {
-    const fetchDoubts = async () => {
-      const snapshot = await getDocs(collection(db, "doubts"));
-      setDoubts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    };
-    fetchDoubts();
-  }, []);
+  const fetchDoubts = async () => {
+    const snapshot = await getDocs(collection(db, "doubts"));
+    setDoubts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  useEffect(() => { fetchDoubts(); }, []);
 
   const getTeachingMethods = async () => {
     try {
       const res = await axios.post(
-        "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=AIzaSyCB3piyf3tuYuDeV66aIQjTvgjIfZlPjls",
+        `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.REACT_APP_GEMINI_API_KEY}`,
         {
           contents: [
             {
               role: "user",
-              parts: [
-                { text: `Suggest effective teaching methods for: ${methodInput}` }
-              ]
+              parts: [{ text: `Suggest effective teaching methods for: ${methodInput}` }]
             }
           ]
         }
@@ -35,7 +31,7 @@ export default function ProfessorDashboard() {
       setAiSuggestions(res.data.candidates[0].content.parts[0].text);
     } catch (err) {
       console.error("Gemini API Error:", err.response ? err.response.data : err.message);
-      setAiSuggestions("Error fetching suggestions.");
+      setAiSuggestions("Error fetching suggestions. Please try again.");
     }
   };
 
@@ -44,6 +40,7 @@ export default function ProfessorDashboard() {
     if (answer) {
       await updateDoc(doc(db, "doubts", id), { answer });
       alert("Answer sent!");
+      fetchDoubts();
     }
   };
 

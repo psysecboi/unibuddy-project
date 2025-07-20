@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { db } from "./firebase";
@@ -12,25 +11,22 @@ export default function StudentDashboard() {
   const [profQuestion, setProfQuestion] = useState("");
   const [allDoubts, setAllDoubts] = useState([]);
 
-  useEffect(() => {
-    const fetchDoubts = async () => {
-      const snapshot = await getDocs(collection(db, "doubts"));
-      setAllDoubts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    };
-    fetchDoubts();
-  }, []);
+  const fetchDoubts = async () => {
+    const snapshot = await getDocs(collection(db, "doubts"));
+    setAllDoubts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  useEffect(() => { fetchDoubts(); }, []);
 
   const askAI = async () => {
     try {
       const res = await axios.post(
-        "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=AIzaSyCB3piyf3tuYuDeV66aIQjTvgjIfZlPjls",
+        `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.REACT_APP_GEMINI_API_KEY}`,
         {
           contents: [
             {
               role: "user",
-              parts: [
-                { text: `Course: ${course}\nTopic: ${topic}\nQuestion: ${question}` }
-              ]
+              parts: [{ text: `Course: ${course}\nTopic: ${topic}\nQuestion: ${question}` }]
             }
           ]
         }
@@ -38,7 +34,7 @@ export default function StudentDashboard() {
       setAiAnswer(res.data.candidates[0].content.parts[0].text);
     } catch (err) {
       console.error(err);
-      setAiAnswer("Error fetching answer from AI.");
+      setAiAnswer("Error fetching answer from AI. Please try again later.");
     }
   };
 
@@ -54,6 +50,7 @@ export default function StudentDashboard() {
       });
       setProfQuestion("");
       alert("Your question has been sent anonymously!");
+      fetchDoubts();
     } catch (err) {
       console.error(err);
     }
